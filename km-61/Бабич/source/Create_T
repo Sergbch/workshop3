@@ -1,0 +1,150 @@
+create table records
+  record_id varchar2(30) not null,
+  record_name varchar2(30) not null
+);
+
+alter table records
+  add constraint record_pk primary key (record_id);
+
+CREATE TRIGGER record_generation
+  BEFORE INSERT
+  ON record
+
+  FOR EACH ROW
+BEGIN
+  :new.record_id := SYS_GUID();
+END;
+
+create table category
+(
+  category_id varchar2(30) not null,
+  category_name varchar2(30) not null
+);
+
+alter table category
+  add constraint category_pk primary key (category_id);
+alter table category
+  add constraint unique_category unique (category_name);
+
+CREATE TRIGGER category_generation
+  BEFORE INSERT
+  ON category
+
+  FOR EACH ROW
+BEGIN
+  :new.category_id := SYS_GUID();
+END;
+
+create table record_in_category
+(
+  id varchar2(32) not null,
+  record_id varchar2(32) not null,
+  category_id varchar2(32) not null
+);
+
+CREATE TRIGGER record_in_category_generation
+  BEFORE INSERT
+  ON category_in_record
+
+  FOR EACH ROW
+BEGIN
+  :new.id := SYS_GUID();
+END;
+
+alter table record_in_category
+(
+  add constraint record_in_category
+(_pk primary key (_id, category_id);
+alter table record_in_category
+(
+  add constraint record_in_category
+(_fk foreign key (record_id) references record
+ (record_id);
+alter table record_in_category
+(
+  add constraint record_in_category
+(_id_fk foreign key (category_id) references groups (category_id);
+
+
+create or replace PACKAGE category_search IS
+
+  TYPE category_data IS RECORD
+    (
+    category_id category.category_ID%TYPE,
+    category_name category.category_name%TYPE 
+    );
+
+  TYPE category_data_table IS TABLE OF category_data;
+
+  FUNCTION find(category_name category
+.category_NAME%TYPE default null,record_NAME record
+.TITLE%TYPE default null)
+    RETURN category_data_table
+    PIPELINED;
+
+END student_search;
+
+
+create or replace PACKAGE BODY category_search IS
+
+  FUNCTION find(category
+_name category
+.category_NAME%TYPE default null,
+                record_name record
+.TITLE%TYPE default null)
+    RETURN category_data_table
+    PIPELINED
+  IS
+    TYPE category_cursor_type IS REF CURSOR;
+    category_cursor category_cursor_type;
+
+    TYPE string_list is varray(3) of varchar2(100);
+    filters string_list := string_list();
+    filters_quantity integer := 0;
+
+    category
+ category_data;
+    query varchar2(2000);
+    filter_query varchar2(300);
+
+  BEGIN
+    filter_query := ' where ';
+
+    query := 'SELECT category.category_id, ' ||
+            '       category.category_name';
+
+    if category_name is not null then
+        filters_quantity := filters_quantity + 1;
+        filters.extend;
+        filters(filters_quantity) := ' category
+.category_name = ''' || category_name || ''' ';
+    end if;
+
+    if record_name is not null then
+        filters_quantity := filters_quantity + 1;
+        filters.extend;
+        filters(filters_quantity) := ' record
+.record_name = ''' || record_name || ''' ';
+        query := query || ' join record_in_category
+( on category
+.category_id = record_in_category
+(.category_id' ||join groups on groups.group_identifier = record_in_category
+(.record_id ';
+    end if;
+
+
+
+    OPEN category_cursor FOR query;
+    LOOP
+      FETCH category_cursor into category
+;
+      exit when (category_cursor %NOTFOUND);
+
+      PIPE ROW (category
+);
+    end loop;
+    CLOSE category_cursor;
+
+  END find;
+
+END category_search;
